@@ -110,6 +110,17 @@
             autocomplete="off"
           />
         </div>
+        <div class="mb-4">
+    <label for="00NU7000007NAtt" class="block text-sm font-medium text-gray-700">
+      Reason for Deleting Driver
+    </label>
+    <select id="00NU7000007NAtt" name="00NU7000007NAtt"
+            class="mt-1 w-full p-2 border border-gray-300 rounded-lg shadow-sm">
+      <option value="">--None--</option>
+      <option value="Other" selected>Other</option>
+      
+    </select>
+  </div>
       </div>
 
       <!-- Hidden Salesforce fields -->
@@ -181,7 +192,8 @@
           { id: "email", label: "Email", type: "email" },
           { id: "00NU7000005zuX3", label: "Policy Number" },
           { id: "00NU7000005zuLl", label: "Effective Date (MM/DD/YYYY)", type: "date" },
-          { id: "driverName", label: "Driver Name" }
+          { id: "driverName", label: "Driver Name" },
+          { id: "00NU7000007NAtt", label: "Reason for Deleting Driver" }
         ];
 
         function isValidDateFormat(value) {
