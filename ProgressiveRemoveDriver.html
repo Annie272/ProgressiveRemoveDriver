@@ -122,6 +122,11 @@
             class="mt-1 w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
             autocomplete="off"
           />
+
+          <p class="mt-2 text-xs text-gray-500 italic">
+   <strong class="text-red-600">Note: </strong>You cannot remove the <strong>Primary Named Insured</strong> driver from the policy.
+  </p>
+
         </div>
 
         <div class="mb-4 w-full">
@@ -142,6 +147,14 @@
       <option value="Other relation">Other relation</option>
     </select>
   </div>
+  <!-- Disclaimer message -->
+<p
+  id="disclaimerMessage"
+  class="hidden mt-3 text-sm text-yellow-700 bg-yellow-100 border border-yellow-300 rounded-lg p-3"
+>
+  ⚠️ If removing a <strong>spouse</strong>, Customer Service will contact you to complete the request.
+</p>
+
 
 
       
@@ -209,6 +222,18 @@
         const missingFieldsList = document.getElementById("missingFieldsList");
         const proceedBtn = document.getElementById("proceedBtn");
         const editBtn = document.getElementById("editBtn");
+
+
+        const relationshipSelect = document.getElementById("00NU7000005zuVR");
+const disclaimer = document.getElementById("disclaimerMessage");
+
+relationshipSelect.addEventListener("change", function () {
+  if (this.value === "Spouse") {
+    disclaimer.classList.remove("hidden");
+  } else {
+    disclaimer.classList.add("hidden");
+  }
+});
 
         // Include Driver Name and Effective Date in validation
         const fieldData = [
