@@ -152,7 +152,7 @@
   id="disclaimerMessage"
   class="hidden mt-3 text-sm text-yellow-700 bg-yellow-100 border border-yellow-300 rounded-lg p-3"
 >
-  ⚠️ If removing a <strong>spouse</strong>, Customer Service will contact you to complete the request.
+  ⚠️ If removing a <strong>spouse</strong>, Customer Service will contact you to complete the request upon submission of form.
 </p>
 
 
@@ -171,7 +171,9 @@
       <input type="hidden" name="lead_source" value="Web Form" />
       <input type="hidden" name="company" value="Remove Driver Test Demo Progressive New" />
       <input type="hidden" name="Debug_Notes__c" value="Progressive Test: 2025-06-27 07:21AM" />
-                <input type="hidden" name="Carrier__c" value ="Progressive">
+      <input type="hidden" id="formDataJson" name="Form_Captured_Data__c" value="" />
+      <input type="hidden" id="formMissingData" name="Form_Missing_Data__c" value="" />
+
 
 
       <!-- Submit button -->
@@ -216,112 +218,176 @@
       </div>
     </div>
     <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const form = document.getElementById("mainForm");
-        const reviewBtn = document.getElementById("reviewBtn");
-        const dialog = document.getElementById("dialog");
-        const dialogTitle = document.getElementById("dialogTitle");
-        const missingFieldsList = document.getElementById("missingFieldsList");
-        const proceedBtn = document.getElementById("proceedBtn");
-        const editBtn = document.getElementById("editBtn");
+    document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("mainForm");
+  const reviewBtn = document.getElementById("reviewBtn");
+  const dialog = document.getElementById("dialog");
+  const dialogTitle = document.getElementById("dialogTitle");
+  const missingFieldsList = document.getElementById("missingFieldsList");
+  const proceedBtn = document.getElementById("proceedBtn");
+  const editBtn = document.getElementById("editBtn");
+
+  const relationshipSelect = document.getElementById("00NU7000005zuVR");
+  const disclaimer = document.getElementById("disclaimerMessage");
+  const formDataJsonInput = document.getElementById("formDataJson");
+    const formMissingDataInput = document.getElementById("formMissingData");
 
 
-        const relationshipSelect = document.getElementById("00NU7000005zuVR");
-const disclaimer = document.getElementById("disclaimerMessage");
+  relationshipSelect && relationshipSelect.addEventListener("change", function () {
+    if (this.value === "Spouse") {
+      disclaimer.classList.remove("hidden");
+    } else {
+      disclaimer.classList.add("hidden");
+    }
+  });
 
-relationshipSelect.addEventListener("change", function () {
-  if (this.value === "Spouse") {
-    disclaimer.classList.remove("hidden");
-  } else {
-    disclaimer.classList.add("hidden");
+  // Fields to validate and capture (id = the "name" for radios)
+  const fieldData = [
+    { id: "email", label: "Email", type: "email" },
+    { id: "00NU7000006IOzh", label: "Request Type", type: "radio" }, // updated label
+    { id: "00NU7000005zuX3", label: "Policy Number" },
+    { id: "00NU7000005zuLl", label: "Effective Date (MM/DD/YYYY)", type: "date" },
+    { id: "driverName", label: "Driver Name" },
+    { id: "00NU7000005zuVR", label: "Relationship To Insured" }
+  ];
+
+  function isValidDateFormat(value) {
+    // MM/DD/YYYY validation
+    return /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/.test(value);
   }
+
+  function getFieldInputValue(field) {
+    if (field.type === 'radio') {
+      const checked = document.querySelector(`input[name='${field.id}']:checked`);
+      return checked ? checked.value : "";
+    }
+    const input = document.getElementById(field.id);
+    if (!input) return "";
+    if (input.tagName === "SELECT") {
+      return input.value;
+    }
+    return input.value;
+  }
+
+  function validateFields() {
+    const missing = [];
+    fieldData.forEach((field) => {
+      if (field.type === "radio") {
+        const radios = document.getElementsByName(field.id);
+        let hasChecked = false;
+        for (let r = 0; r < radios.length; r++) {
+          if (radios[r].checked) {
+            hasChecked = true;
+            break;
+          }
+        }
+        if (!hasChecked) missing.push(field.label);
+        return;
+      }
+      const input = document.getElementById(field.id);
+      if (!input || !input.value.trim()) {
+        missing.push(field.label);
+      } else {
+        if (field.type === "email" && !input.checkValidity()) {
+          missing.push(field.label);
+        }
+        if (field.type === "date" && !isValidDateFormat(input.value.trim())) {
+          missing.push(field.label + " (Format MM/DD/YYYY)");
+        }
+      }
+    });
+    return missing;
+  }
+
+  new Pikaday({
+    field: document.getElementById("00NU7000005zuLl"),
+    format: "MM/DD/YYYY",
+    toString(date) {
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${month}/${day}/${year}`;
+    },
+    parse(dateString) {
+      const [month, day, year] = dateString.split("/");
+      return new Date(year, month - 1, day);
+    },
+  });
+
+  reviewBtn.addEventListener("click", () => {
+    const missing = validateFields();
+
+    const completedData = [];
+    fieldData.forEach(field => {
+      const val = getFieldInputValue(field).trim();
+      let isMissing = false;
+      if (!val) {
+        isMissing = true;
+      } else if (field.type === "email") {
+        const input = document.getElementById(field.id);
+        if (input && !input.checkValidity()) isMissing = true;
+      } else if (field.type === "date" && field.id === "00NU7000005zuLl" && !isValidDateFormat(val)) {
+        isMissing = true;
+      }
+
+      if (!isMissing) {
+        completedData.push(`${field.label} = ${val}`);
+      }
+    });
+
+    // Store completed data line-by-line
+    if (formDataJsonInput) {
+      formDataJsonInput.value = completedData.join('\n');
+    }
+
+    // Store missing field names, one per line
+    if (formMissingDataInput) {
+      formMissingDataInput.value = missing.join('\n');
+    }
+
+    // Show/hide quotePolicyError if Request Type is empty
+    const quotePolicyError = document.getElementById("quotePolicyError");
+    if (quotePolicyError) {
+      if (missing.includes("Request Type")) {
+        quotePolicyError.classList.remove("hidden");
+      } else {
+        quotePolicyError.classList.add("hidden");
+      }
+    }
+
+    if (missing.length) {
+      dialogTitle.textContent = "Below Mandatory Fields are missing and the Team will contact you shortly.";
+      missingFieldsList.innerHTML = missing.map((f) => `<li>${f}</li>`).join("");
+    } else {
+      dialogTitle.textContent = "All mandatory fields are completed. Ready to submit your request?";
+      missingFieldsList.innerHTML = "";
+    }
+    dialog.classList.remove("hidden");
+  });
+
+  editBtn.addEventListener("click", () => {
+    dialog.classList.add("hidden");
+  });
+
+  proceedBtn.addEventListener("click", () => {
+    dialog.classList.add("hidden");
+    form.submit();
+  });
+
+  window.addEventListener("click", (e) => {
+    if (e.target === dialog) {
+      dialog.classList.add("hidden");
+    }
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !dialog.classList.contains("hidden")) {
+      dialog.classList.add("hidden");
+    }
+  });
 });
 
-        // Include Driver Name and Effective Date in validation
-        const fieldData = [
-          { id: "email", label: "Email", type: "email" },
-          { id: "00NU7000005zuX3", label: "Policy Number" },
-          { id: "00NU7000005zuLl", label: "Effective Date (MM/DD/YYYY)", type: "date" },
-          { id: "driverName", label: "Driver Name" },
-          { id: "00NU7000005zuVR", label: "Relationship To Insured" },
-        ];
 
-        function isValidDateFormat(value) {
-          // MM/DD/YYYY validation
-          return /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/.test(value);
-        }
-
-        function validateFields() {
-          const missing = [];
-          fieldData.forEach((field) => {
-            const input = document.getElementById(field.id);
-            if (!input || !input.value.trim()) {
-              missing.push(field.label);
-            } else {
-              if (field.type === "email" && !input.checkValidity()) {
-                missing.push(field.label);
-              }
-              if (field.type === "date" && !isValidDateFormat(input.value.trim())) {
-                missing.push(field.label + " (Format MM/DD/YYYY)");
-              }
-            }
-          });
-          return missing;
-        }
-
-        // Initialize Pikaday Datepicker for Effective Date
-        new Pikaday({
-          field: document.getElementById("00NU7000005zuLl"),
-          format: "MM/DD/YYYY",
-          toString(date) {
-            const day = String(date.getDate()).padStart(2, "0");
-            const month = String(date.getMonth() + 1).padStart(2, "0");
-            const year = date.getFullYear();
-            return `${month}/${day}/${year}`;
-          },
-          parse(dateString) {
-            const [month, day, year] = dateString.split("/");
-            return new Date(year, month - 1, day);
-          },
-        });
-
-        reviewBtn.addEventListener("click", () => {
-          const missing = validateFields();
-          if (missing.length) {
-            dialogTitle.textContent =
-              "Below Mandatory Fields are missing and the Team will contact you shortly.";
-            missingFieldsList.innerHTML = missing
-              .map((f) => `<li>${f}</li>`)
-              .join("");
-          } else {
-            dialogTitle.textContent =
-              "All mandatory fields are completed. Ready to submit your request?";
-            missingFieldsList.innerHTML = "";
-          }
-          dialog.classList.remove("hidden");
-        });
-
-        editBtn.addEventListener("click", () => {
-          dialog.classList.add("hidden");
-        });
-
-        proceedBtn.addEventListener("click", () => {
-          dialog.classList.add("hidden");
-          form.submit();
-        });
-
-        window.addEventListener("click", (e) => {
-          if (e.target === dialog) {
-            dialog.classList.add("hidden");
-          }
-        });
-
-        window.addEventListener("keydown", (e) => {
-          if (e.key === "Escape" && !dialog.classList.contains("hidden")) {
-            dialog.classList.add("hidden");
-          }
-        });
-      });
     </script>
   </body>
 </html>
