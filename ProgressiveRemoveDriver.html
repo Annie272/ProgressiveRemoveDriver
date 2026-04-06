@@ -173,7 +173,7 @@
       <input type="hidden" id="formDataJson" name="Form_Captured_Data__c" value="" />
       <input type="hidden" id="formMissingData" name="Form_Missing_Data__c" value="" />
       <input type="hidden" name="delete_Action_Form__c" value="1" />
-
+<input type="hidden" id="allFormData" name="All_Form_Data__c" value="" />
                     <input type="hidden" name="Carrier__c" value ="Progressive">
 
 
@@ -345,6 +345,25 @@
     if (formMissingDataInput) {
       formMissingDataInput.value = missing.join('\n');
     }
+
+    // Build and store all form data JSON
+const selectedRequestType =
+  document.querySelector('input[name="Is_this_a_quote_or_a_change_request__c"]:checked')?.value || "";
+
+const allFormData = {
+  Email: document.getElementById("email")?.value || "",
+  Is_this_a_quote_or_a_change_request: selectedRequestType,
+  Policy_Number: document.getElementById("00NU7000005zuX3")?.value || "",
+  Effective_Date: document.getElementById("00NU7000005zuLl")?.value || "",
+  Driver_Name: document.getElementById("driverName")?.value || "",
+  Relationship_To_Insured: document.getElementById("00NU7000005zuVR")?.value || "",
+
+  // Hidden fields
+  Carrier: document.querySelector('input[name="Carrier__c"]')?.value || "Progressive",
+  Policy_Action: document.getElementById("00NU7000005zuNN")?.value || "Remove Driver"
+};
+
+document.getElementById("allFormData").value = JSON.stringify(allFormData);
 
     // Show/hide quotePolicyError if Request Type is empty
     const quotePolicyError = document.getElementById("quotePolicyError");
